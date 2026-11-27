@@ -1,0 +1,7 @@
+/dist/
+/node_modules/
+/*.tgz
+/result
+/result-*
+/npm-debug.log*
+/pnpm-debug.log*

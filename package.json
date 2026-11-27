@@ -1,0 +1,18 @@
+{
+  "name": "agentframe",
+  "version": "0.1.0",
+  "description": "Local CLI for creating motion graphics, editing footage, and rendering HTML compositions to MP4.",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "bin": { "agentframe": "dist/cli.js" },
+  "files": ["assets/wordmark-*.svg", "dist/", "src/", "skills/agentframe/", "install.sh", "tsconfig.json"],
+  "engines": { "node": ">=26" },
+  "scripts": {
+    "build": "tsc --noEmit false --rewriteRelativeImportExtensions --rootDir src --outDir dist && node -e \"require('node:fs').copyFileSync('src/page.js', 'dist/page.js')\"",
+    "prepack": "npm run build",
+    "test": "node --test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "playwright": "^1.59.0" },
+  "devDependencies": { "@types/node": "^26.0.0", "typescript": "^6.0.0" }
+}
