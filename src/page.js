@@ -44,7 +44,7 @@
     });
   }
 
-  async function seek(seconds, states) {
+  async function seek(seconds, states, waitForPaint) {
     await Promise.all([...videos].map(async ([id, video]) => {
       const state = states[id];
       video.style.visibility = state.active ? '' : 'hidden';
@@ -58,7 +58,9 @@
       }
     }));
     await window.seek?.(seconds, states);
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (waitForPaint) {
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
   }
 
   window.__agentframe = { bind, seek, validate: () => Promise.all([...videos.values()].map(readyVideo)) };

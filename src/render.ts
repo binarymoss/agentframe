@@ -1,10 +1,13 @@
 import { mkdtemp, rename, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { buildMix } from './audio.ts';
-import { openStage } from './browser.ts';
+import { openStage, timed } from './browser.ts';
+import type { Stage } from './browser.ts';
 import { checkMedia, validateDecode } from './check.ts';
 import { runFfmpeg } from './media.ts';
 import type { Project } from './project.ts';
+
+const minParallelFrames = 120;
 
 function frameIndex(seconds: number, fps: number): number {
   const frame = seconds * fps;
@@ -14,13 +17,33 @@ function frameIndex(seconds: number, fps: number): number {
     : Math.ceil(frame);
 }
 
+async function openCapture(stage: Stage, fps: number, waitForPaint: boolean): Promise<(index: number) => Promise<Buffer>> {
+  const cdp = await stage.page.context().newCDPSession(stage.page);
+  return async (index) => {
+    const time = index / fps;
+    await stage.seek(time, waitForPaint);
+    const { data } = await timed(`Capture at ${time}s`, (async () => {
+      await stage.page.evaluate(() => document.fonts.ready.then(() => undefined));
+      return cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true });
+    })());
+    stage.assertHealthy();
+    return Buffer.from(data, 'base64');
+  };
+}
+
 export async function render(project: Project, target: string, range?: { start: number; end: number }): Promise<void> {
   const findings = await checkMedia(project);
   if (findings.length) throw new Error(findings.map((finding) => `${finding.clipId}: ${finding.message}`).join('\n'));
-  const stage = await openStage(project);
+  const stageProject = range && !project.hasHtml
+    ? { ...project, clips: project.clips.filter((clip) =>
+      clip.kind !== 'video' || (clip.start < range.end && clip.start + clip.duration > range.start),
+    ) }
+    : project;
+  const stage = await openStage(stageProject);
+  let secondStage: Stage | undefined;
   let root: string | undefined;
   try {
-    const { fps, duration } = stage.output;
+    const { width, height, fps, duration } = stage.output;
     const { start, end } = range ?? { start: 0, end: duration };
     if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || start >= end || end > duration) {
       throw new Error('Render range is outside the project');
@@ -29,14 +52,30 @@ export async function render(project: Project, target: string, range?: { start: 
     const stop = frameIndex(end, fps);
     if (first >= stop) throw new Error('Render range contains no frames');
     await validateDecode(stage);
+    const hasVideo = stageProject.clips.some((clip) => clip.kind === 'video');
+    const parallel = stop - first >= minParallelFrames && project.hasHtml && !hasVideo
+      && await stage.page.evaluate(() => !window.buildAudio);
     root = await mkdtemp(join(dirname(resolve(target)), '.agentframe-'));
     const mix = join(root, 'mix.wav');
     await buildMix(project, stage, mix);
     stage.assertHealthy();
+    // A video can fire seeked before the compositor presents its frame.
+    const capture = await openCapture(stage, fps, hasVideo);
+    if (parallel) secondStage = await openStage(stageProject);
+    const secondOutput = secondStage?.output;
+    const captureSecond = secondStage && secondOutput?.width === width && secondOutput.height === height
+      && secondOutput.fps === fps && secondOutput.duration === duration
+      ? await openCapture(secondStage, fps, false)
+      : undefined;
     async function* frames() {
       for (let index = first; index < stop; index++) {
-        await stage.seek(index / fps);
-        yield await stage.page.screenshot({ timeout: 10000 });
+        if (captureSecond && index + 1 < stop) {
+          // Capture adjacent frames together to keep at most two buffers ahead of the encoder.
+          yield* await Promise.all([capture(index), captureSecond(index + 1)]);
+          index++;
+        } else {
+          yield await capture(index);
+        }
       }
     }
     const output = join(root, 'out.mp4');
@@ -48,9 +87,10 @@ export async function render(project: Project, target: string, range?: { start: 
       '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-movflags', '+faststart', output,
     ], frames());
     stage.assertHealthy();
+    if (captureSecond) secondStage?.assertHealthy();
     await rename(output, target);
   } finally {
-    try { await stage.close(); } finally {
+    try { await Promise.all([stage.close(), secondStage?.close()]); } finally {
       if (root) await rm(root, { recursive: true, force: true });
     }
   }

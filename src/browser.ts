@@ -16,7 +16,7 @@ declare global {
     seek?: (seconds: number, clips: Record<string, ClipState>) => void | Promise<void>;
     __agentframe: {
       bind(clips: Clip[], defaultStage: boolean): void;
-      seek(seconds: number, clips: Record<string, ClipState>): Promise<void>;
+      seek(seconds: number, clips: Record<string, ClipState>, waitForPaint: boolean): Promise<void>;
       validate(): Promise<void>;
     };
   }
@@ -26,7 +26,7 @@ const pageScript = fileURLToPath(new URL('./page.js', import.meta.url));
 export type Stage = {
   page: Page;
   output: Output;
-  seek(seconds: number): Promise<void>;
+  seek(seconds: number, waitForPaint?: boolean): Promise<void>;
   assertHealthy(): void;
   close(): Promise<void>;
 };
@@ -133,11 +133,11 @@ export async function openStage(project: Project, { observe, onPageError }: Stag
     assertHealthy();
     return {
       page, output, close, assertHealthy,
-      async seek(seconds) {
+      async seek(seconds, waitForPaint = true) {
         assertHealthy();
         await timed(`Seek at ${seconds}s`, page.evaluate(
-          ({ seconds, states }) => window.__agentframe.seek(seconds, JSON.parse(states)),
-          { seconds, states: JSON.stringify(clipStates(project.clips, seconds)) },
+          ({ seconds, states, waitForPaint }) => window.__agentframe.seek(seconds, JSON.parse(states), waitForPaint),
+          { seconds, states: JSON.stringify(clipStates(project.clips, seconds)), waitForPaint },
         ));
         assertHealthy();
       },

@@ -48,7 +48,7 @@ Run these from the composition folder. Adjust the example times to fit the proje
 </script>
 ```
 
-Make `window.seek(time)` set visual state directly from the requested time. Frames can be visited out of order. Return a promise when a frame needs asynchronous work before capture. Set `window.ready` to a promise for one-time setup. Schedule generated sound in `window.buildAudio(context)` using the supplied offline context so it reaches the export.
+Make `window.seek(time)` set visual state directly from the requested time. Frames can be visited out of order. Finish every update that affects the frame before `seek` returns or its promise resolves. Use the requested time instead of `requestAnimationFrame` or timers as the animation clock. Set `window.ready` to a promise for one-time setup, such as decoding images. Schedule generated sound in `window.buildAudio(context)` using the supplied offline context so it reaches the export.
 
 If the user asks you to make music and supplies neither an audio file nor another way to generate it, compose and synthesize the music in `window.buildAudio(ctx)` using Web Audio. Schedule the notes and volume envelopes on the project clock.
 
