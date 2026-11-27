@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-white.svg">
-    <img src="assets/wordmark-black.svg" width="360" alt="AgentFrame">
+    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/agentframe@0.1.0/assets/wordmark-white.svg">
+    <img src="https://cdn.jsdelivr.net/npm/agentframe@0.1.0/assets/wordmark-black.svg" width="360" alt="AgentFrame">
   </picture>
 </p>
 
