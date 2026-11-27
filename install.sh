@@ -1,21 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -eq 0 ]]; then
-  skills_dir="$HOME/.agents/skills"
-elif [[ $# -eq 1 && "$1" == --claude ]]; then
-  skills_dir="$HOME/.claude/skills"
-else
-  printf 'Usage: bash install.sh [--claude]\n' >&2
-  exit 2
+skills_dir="$HOME/.agents/skills"
+skill_only=false
+for arg in "$@"; do
+  case "$arg" in
+    --claude) skills_dir="$HOME/.claude/skills" ;;
+    --skill-only) skill_only=true ;;
+    *)
+      printf 'Usage: bash install.sh [--skill-only] [--claude]\n' >&2
+      exit 2
+      ;;
+  esac
+done
+
+installer_path="${BASH_SOURCE[0]:-}"
+
+install_skill() (
+  target_dir="$skills_dir/agentframe"
+  source_file=
+  if [[ -n "$installer_path" ]]; then
+    source_file="$(dirname -- "$installer_path")/skills/agentframe/SKILL.md"
+  fi
+  mkdir -p -- "$target_dir"
+  temp_file=$(mktemp "$target_dir/.SKILL.md.XXXXXXXX")
+  trap 'rm -f -- "$temp_file"' EXIT
+
+  if [[ -f "$source_file" ]]; then
+    cp -- "$source_file" "$temp_file"
+  else
+    curl -fsSL -o "$temp_file" \
+      https://raw.githubusercontent.com/binarymoss/agentframe/main/skills/agentframe/SKILL.md
+  fi
+
+  mv -fT -- "$temp_file" "$target_dir/SKILL.md"
+  printf 'Installed %s\n' "$target_dir/SKILL.md"
+)
+
+if [[ "$skill_only" == true ]]; then
+  install_skill
+  exit 0
 fi
 
 if command -v nix >/dev/null; then
   printf 'Nix detected. Add github:binarymoss/agentframe as an input in your flake.nix manually.\n'
   exit 0
 fi
-
-installer_path="${BASH_SOURCE[0]:-}"
 
 node_ready() {
   node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 26 ? 0 : 1)' 2>/dev/null
@@ -124,22 +154,5 @@ if ! cli_path=$(command -v agentframe); then
   exit 1
 fi
 
-target_dir="$skills_dir/agentframe"
-source_file=
-if [[ -n "$installer_path" ]]; then
-  source_file="$(dirname -- "$installer_path")/skills/agentframe/SKILL.md"
-fi
-mkdir -p -- "$target_dir"
-temp_file=$(mktemp "$target_dir/.SKILL.md.XXXXXXXX")
-trap 'rm -f -- "$temp_file"' EXIT
-
-if [[ -f "$source_file" ]]; then
-  cp -- "$source_file" "$temp_file"
-else
-  curl -fsSL -o "$temp_file" \
-    https://raw.githubusercontent.com/binarymoss/agentframe/main/skills/agentframe/SKILL.md
-fi
-
-mv -fT -- "$temp_file" "$target_dir/SKILL.md"
-printf 'Installed %s\n' "$target_dir/SKILL.md"
+install_skill
 printf 'Add %s to PATH if it is not already there.\n' "$(dirname -- "$cli_path")"

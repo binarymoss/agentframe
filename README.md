@@ -33,7 +33,7 @@ The installer also copies the skill to `~/.agents/skills/agentframe`. For Claude
 
 Add AgentFrame to your flake inputs. Here's an example for NixOS.
 
-#### Step 1: Add the input
+#### Add the input
 
 In `flake.nix`:
 
@@ -54,7 +54,7 @@ In `flake.nix`:
 }
 ```
 
-#### Step 2: Add the package
+#### Add the package
 
 In `configuration.nix`:
 
@@ -68,5 +68,13 @@ In `configuration.nix`:
   ];
 }
 ```
+
+#### Install the skill
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/binarymoss/agentframe/main/install.sh | bash -s -- --skill-only
+```
+
+For Claude Code, add `--claude` after `--skill-only`.
 
 Then just ask your agent to create whatever you want!
