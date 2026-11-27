@@ -1,5 +1,5 @@
 {
-  description = "AgentFrame";
+  description = "The open-source video editor for coding agents: create from scratch or edit existing footage";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs = { nixpkgs, ... }:

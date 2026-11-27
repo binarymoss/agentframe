@@ -1,7 +1,7 @@
 {
   "name": "agentframe",
-  "version": "0.1.0",
-  "description": "Local CLI for creating motion graphics, editing footage, and rendering HTML compositions to MP4.",
+  "version": "0.1.1",
+  "description": "The open-source video editor for coding agents: create from scratch or edit existing footage",
   "license": "GPL-3.0-only",
   "type": "module",
   "bin": { "agentframe": "dist/cli.js" },
