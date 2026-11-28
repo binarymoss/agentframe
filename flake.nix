@@ -7,6 +7,9 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       browser = "${pkgs.chromium}/bin/chromium";
+      biomeFiles = "src test package.json tsconfig.json";
+      formatFiles = "${biomeFiles} AGENTS.md README.md skills";
+      biomeFormat = "${pkgs.biome}/bin/biome format --indent-style=space --md-formatter-enabled=true";
       agentframe = pkgs.stdenvNoCC.mkDerivation {
         pname = "agentframe";
         version = "0.1.0";
@@ -35,8 +38,42 @@
         '';
         meta.mainProgram = "agentframe";
       };
+      lint = pkgs.runCommand "agentframe-lint" {
+        src = pkgs.lib.fileset.toSource {
+          root = ./.;
+          fileset = pkgs.lib.fileset.unions [ ./src ./test ./package.json ./tsconfig.json ./AGENTS.md ./README.md ./skills ];
+        };
+      } ''
+        cd "$src"
+        ${biomeFormat} ${formatFiles}
+        ${pkgs.biome}/bin/biome lint ${biomeFiles}
+        touch "$out"
+      '';
+      tests = agentframe.overrideAttrs (old: {
+        pname = "agentframe-tests";
+        src = pkgs.lib.fileset.toSource {
+          root = ./.;
+          fileset = pkgs.lib.fileset.unions [ ./src ./test ./package.json ./pnpm-lock.yaml ];
+        };
+        nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.ffmpeg ];
+        AGENTFRAME_BROWSER_PATH = browser;
+        doCheck = true;
+        checkPhase = ''
+          runHook preCheck
+          pnpm test
+          runHook postCheck
+        '';
+        installPhase = "touch \"$out\"";
+      });
     in {
       packages.${system} = { inherit agentframe; default = agentframe; };
+      formatter.${system} = pkgs.writeShellScriptBin "agentframe-format" ''
+        if [ "$#" -eq 0 ]; then
+          set -- ${formatFiles}
+        fi
+        exec ${biomeFormat} --write "$@"
+      '';
+      checks.${system} = { inherit lint tests; };
       apps.${system}.agentframe = {
         type = "app";
         program = "${agentframe}/bin/agentframe";

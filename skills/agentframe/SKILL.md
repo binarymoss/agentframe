@@ -1,4 +1,5 @@
 ---
+
 name: agentframe
 description: Use when making motion graphics, animated titles, or overlays in HTML, CSS, and JavaScript with AgentFrame, or when checking, inspecting, or exporting an AgentFrame composition to MP4.
 compatibility: Requires the AgentFrame CLI, Node.js 26+, FFmpeg, FFprobe, and Chromium with H.264 decoding.
@@ -49,6 +50,7 @@ If the user asks you to make music and supplies neither an audio file nor anothe
 ## Add footage and audio to a composition
 
 Place `timeline.json` next to `index.html` to time media used by the scene:
+
 ```json
 {
   "duration": 6,

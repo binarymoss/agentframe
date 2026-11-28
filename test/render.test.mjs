@@ -1,17 +1,19 @@
-import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import test from 'node:test';
-import { chromium } from 'playwright';
-import { loadProject } from '../src/project.ts';
-import { render } from '../src/render.ts';
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { chromium } from "playwright";
+import { loadProject } from "../src/project.ts";
+import { render } from "../src/render.ts";
 
-test('range export uses the full frame grid and includes generated audio', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("range export uses the full frame grid and includes generated audio", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await writeFile(join(dir, 'index.html'), `
+  await writeFile(
+    join(dir, "index.html"),
+    `
     <style>body {margin:0}</style><script>
     window.duration = 1;
     window.output = {width:64,height:64,fps:10};
@@ -30,22 +32,53 @@ test('range export uses the full frame grid and includes generated audio', async
       oscillator.connect(gain).connect(ctx.destination);
       oscillator.start(0);
     };
-    </script>`);
-  const output = join(dir, 'out.mp4');
-  execFileSync(process.execPath, ['src/cli.ts', 'render', dir, '--range', '0.01,0.51', '-o', output]);
-  const video = execFileSync('ffmpeg', [
-    '-v', 'error', '-i', output, '-vf', 'scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
+    </script>`,
+  );
+  const output = join(dir, "out.mp4");
+  execFileSync(process.execPath, [
+    "src/cli.ts",
+    "render",
+    dir,
+    "--range",
+    "0.01,0.51",
+    "-o",
+    output,
+  ]);
+  const video = execFileSync("ffmpeg", [
+    "-v",
+    "error",
+    "-i",
+    output,
+    "-vf",
+    "scale=1:1",
+    "-f",
+    "rawvideo",
+    "-pix_fmt",
+    "rgb24",
+    "-",
   ]);
   assert.equal(video.length, 5 * 3);
   assert.ok(video[2] > 200);
-  const full = join(dir, 'full.mp4');
-  execFileSync(process.execPath, ['src/cli.ts', 'render', dir, '-o', full]);
-  const decodeAudio = (path) => execFileSync('ffmpeg', ['-v', 'error', '-i', path, '-map', '0:a', '-f', 's16le', '-']);
+  const full = join(dir, "full.mp4");
+  execFileSync(process.execPath, ["src/cli.ts", "render", dir, "-o", full]);
+  const decodeAudio = (path) =>
+    execFileSync("ffmpeg", [
+      "-v",
+      "error",
+      "-i",
+      path,
+      "-map",
+      "0:a",
+      "-f",
+      "s16le",
+      "-",
+    ]);
   const audio = decodeAudio(output);
   const fullAudio = decodeAudio(full);
   const rms = (buffer, start) => {
     let squares = 0;
-    for (let index = start; index < start + 1200; index++) squares += buffer.readInt16LE(index * 4) ** 2;
+    for (let index = start; index < start + 1200; index++)
+      squares += buffer.readInt16LE(index * 4) ** 2;
     return Math.sqrt(squares / 1200);
   };
   const original = rms(fullAudio, 6000);
@@ -53,10 +86,12 @@ test('range export uses the full frame grid and includes generated audio', async
   assert.ok(Math.abs(rms(audio, 1200) - original) / original < 0.1);
 });
 
-test('two render workers preserve frame order and the last frame of an odd-length range', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("two render workers preserve frame order and the last frame of an odd-length range", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await writeFile(join(dir, 'index.html'), `
+  await writeFile(
+    join(dir, "index.html"),
+    `
     <!doctype html><style>body {margin:0}</style><script>
     window.duration = 13;
     window.output = {width:64,height:64,fps:10};
@@ -65,45 +100,70 @@ test('two render workers preserve frame order and the last frame of an odd-lengt
       if (frame % 2 === 0) await new Promise(resolve => setTimeout(resolve, 5));
       document.body.style.background = ['red', 'lime', 'blue'][frame % 3];
     };
-    </script>`);
-  const launch = t.mock.method(chromium, 'launch');
-  const output = join(dir, 'out.mp4');
+    </script>`,
+  );
+  const launch = t.mock.method(chromium, "launch");
+  const output = join(dir, "out.mp4");
   await render(await loadProject(dir), output, { start: 0.2, end: 12.3 });
   assert.equal(launch.mock.callCount(), 2);
-  const pixels = execFileSync('ffmpeg', [
-    '-v', 'error', '-i', output, '-vf', 'scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
+  const pixels = execFileSync("ffmpeg", [
+    "-v",
+    "error",
+    "-i",
+    output,
+    "-vf",
+    "scale=1:1",
+    "-f",
+    "rawvideo",
+    "-pix_fmt",
+    "rgb24",
+    "-",
   ]);
   assert.equal(pixels.length, 121 * 3);
   for (let frame = 0; frame < 121; frame++) {
     const pixel = pixels.subarray(frame * 3, frame * 3 + 3);
-    assert.equal(pixel.findIndex(value => value > 200), (frame + 2) % 3, `frame ${frame}`);
+    assert.equal(
+      pixel.findIndex((value) => value > 200),
+      (frame + 2) % 3,
+      `frame ${frame}`,
+    );
   }
 });
 
-test('a failed parallel capture closes both browsers and preserves the target', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("a failed parallel capture closes both browsers and preserves the target", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const output = join(dir, 'existing.mp4');
-  await writeFile(output, 'original');
-  await writeFile(join(dir, 'index.html'), `
+  const output = join(dir, "existing.mp4");
+  await writeFile(output, "original");
+  await writeFile(
+    join(dir, "index.html"),
+    `
     <script>
     window.duration = 12;
     window.output = {width:64,height:64,fps:10};
     window.seek = time => { if (time === 0.1) throw new Error('failed parallel frame'); };
-    </script>`);
-  const launch = t.mock.method(chromium, 'launch');
-  await assert.rejects(render(await loadProject(dir), output), /failed parallel frame/);
-  const browsers = await Promise.all(launch.mock.calls.map(({ result }) => result));
+    </script>`,
+  );
+  const launch = t.mock.method(chromium, "launch");
+  await assert.rejects(
+    render(await loadProject(dir), output),
+    /failed parallel frame/,
+  );
+  const browsers = await Promise.all(
+    launch.mock.calls.map(({ result }) => result),
+  );
   assert.equal(browsers.length, 2);
-  assert.ok(browsers.every(browser => !browser.isConnected()));
-  assert.equal(await readFile(output, 'utf8'), 'original');
-  assert.deepEqual((await readdir(dir)).sort(), ['existing.mp4', 'index.html']);
+  assert.ok(browsers.every((browser) => !browser.isConnected()));
+  assert.equal(await readFile(output, "utf8"), "original");
+  assert.deepEqual((await readdir(dir)).sort(), ["existing.mp4", "index.html"]);
 });
 
-test('a long render with generated audio uses the same page for audio and frames', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("a long render with generated audio uses the same page for audio and frames", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await writeFile(join(dir, 'index.html'), `
+  await writeFile(
+    join(dir, "index.html"),
+    `
     <script>
     window.duration = 1;
     window.output = {width:64,height:64,fps:120};
@@ -111,113 +171,196 @@ test('a long render with generated audio uses the same page for audio and frames
     window.seek = () => {
       if (!window.audioInitialized) throw new Error('Audio was initialized on another page');
     };
-    </script>`);
-  const launch = t.mock.method(chromium, 'launch');
-  await render(await loadProject(dir), join(dir, 'out.mp4'));
+    </script>`,
+  );
+  const launch = t.mock.method(chromium, "launch");
+  await render(await loadProject(dir), join(dir, "out.mp4"));
   assert.equal(launch.mock.callCount(), 1);
 });
 
-test('uses timeline dimensions before loading HTML and in the exported MP4', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("uses timeline dimensions before loading HTML and in the exported MP4", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await writeFile(join(dir, 'timeline.json'), JSON.stringify({
-    width: 320, height: 180, fps: 10, duration: 0.2, clips: [],
-  }));
-  await writeFile(join(dir, 'index.html'), `<script>
+  await writeFile(
+    join(dir, "timeline.json"),
+    JSON.stringify({
+      width: 320,
+      height: 180,
+      fps: 10,
+      duration: 0.2,
+      clips: [],
+    }),
+  );
+  await writeFile(
+    join(dir, "index.html"),
+    `<script>
     const initializedSize = [innerWidth, innerHeight];
     window.output = {width:64,height:64};
     window.seek = () => {
       if (initializedSize.join(',') !== '320,180') throw new Error('wrong viewport at startup');
     };
-  </script>`);
-  const output = join(dir, 'out.mp4');
-  execFileSync(process.execPath, ['src/cli.ts', 'render', dir, '-o', output]);
-  const size = execFileSync('ffprobe', [
-    '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height',
-    '-of', 'csv=p=0', output,
-  ], { encoding: 'utf8' });
-  assert.equal(size.trim(), '320,180');
+  </script>`,
+  );
+  const output = join(dir, "out.mp4");
+  execFileSync(process.execPath, ["src/cli.ts", "render", dir, "-o", output]);
+  const size = execFileSync(
+    "ffprobe",
+    [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=width,height",
+      "-of",
+      "csv=p=0",
+      output,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(size.trim(), "320,180");
 });
 
-test('an HTML range captures both sides of a video cut', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("an HTML range captures both sides of a video cut", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  for (const [name, color] of [['red.mp4', 'red'], ['blue.mp4', 'blue']]) {
-    execFileSync('ffmpeg', [
-      '-v', 'error', '-f', 'lavfi', '-i', `color=${color}:s=64x64:r=10:d=1`,
-      '-c:v', 'libx264', join(dir, name),
+  for (const [name, color] of [
+    ["red.mp4", "red"],
+    ["blue.mp4", "blue"],
+  ]) {
+    execFileSync("ffmpeg", [
+      "-v",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      `color=${color}:s=64x64:r=10:d=1`,
+      "-c:v",
+      "libx264",
+      join(dir, name),
     ]);
   }
-  await writeFile(join(dir, 'timeline.json'), JSON.stringify({
-    width: 64, height: 64, fps: 10, duration: 2,
-    clips: ['red.mp4', 'blue.mp4'].map((src, start) => ({
-      id: src, kind: 'video', src, start, duration: 1,
-    })),
-  }));
-  await writeFile(join(dir, 'index.html'), `
+  await writeFile(
+    join(dir, "timeline.json"),
+    JSON.stringify({
+      width: 64,
+      height: 64,
+      fps: 10,
+      duration: 2,
+      clips: ["red.mp4", "blue.mp4"].map((src, start) => ({
+        id: src,
+        kind: "video",
+        src,
+        start,
+        duration: 1,
+      })),
+    }),
+  );
+  await writeFile(
+    join(dir, "index.html"),
+    `
     <!doctype html><style>body {margin:0} video {position:absolute;inset:0}</style>
-    <video data-clip="red.mp4"></video><video data-clip="blue.mp4"></video>`);
-  const output = join(dir, 'out.mp4');
-  execFileSync(process.execPath, ['src/cli.ts', 'render', dir, '--range', '0.9,1.1', '-o', output], { timeout: 15000 });
-  const pixels = execFileSync('ffmpeg', [
-    '-v', 'error', '-i', output, '-vf', 'scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
+    <video data-clip="red.mp4"></video><video data-clip="blue.mp4"></video>`,
+  );
+  const output = join(dir, "out.mp4");
+  execFileSync(
+    process.execPath,
+    ["src/cli.ts", "render", dir, "--range", "0.9,1.1", "-o", output],
+    { timeout: 15000 },
+  );
+  const pixels = execFileSync("ffmpeg", [
+    "-v",
+    "error",
+    "-i",
+    output,
+    "-vf",
+    "scale=1:1",
+    "-f",
+    "rawvideo",
+    "-pix_fmt",
+    "rgb24",
+    "-",
   ]);
   assert.equal(pixels.length, 6);
   assert.ok(pixels[0] > 200 && pixels[2] < 20);
   assert.ok(pixels[3] < 20 && pixels[5] > 200);
 });
 
-test('render reports uncaught page errors instead of replacing the target', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("render reports uncaught page errors instead of replacing the target", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const output = join(dir, 'existing.mp4');
-  await writeFile(output, 'original');
+  const output = join(dir, "existing.mp4");
+  await writeFile(output, "original");
   for (const script of [
     `window.seek = () => {}; throw new Error('uncaught frame error');`,
     `window.seek = () => requestAnimationFrame(() => { throw new Error('uncaught frame error'); });`,
   ]) {
-    await writeFile(join(dir, 'index.html'), `<script>
+    await writeFile(
+      join(dir, "index.html"),
+      `<script>
       window.duration = 0.1;
       window.output = {width:64,height:64,fps:10};
       ${script}
-    </script>`);
-    const result = spawnSync(process.execPath, ['src/cli.ts', 'render', dir, '-o', output], {
-      encoding: 'utf8', timeout: 15000,
-    });
+    </script>`,
+    );
+    const result = spawnSync(
+      process.execPath,
+      ["src/cli.ts", "render", dir, "-o", output],
+      {
+        encoding: "utf8",
+        timeout: 15000,
+      },
+    );
     assert.equal(result.status, 1);
     assert.match(result.stderr, /uncaught frame error/);
-    assert.equal(await readFile(output, 'utf8'), 'original');
+    assert.equal(await readFile(output, "utf8"), "original");
   }
 });
 
-test('a failed capture leaves the existing target and removes the temporary export', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("a failed capture leaves the existing target and removes the temporary export", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const output = join(dir, 'existing.mp4');
-  await writeFile(output, 'original');
-  await writeFile(join(dir, 'index.html'), `<script>
+  const output = join(dir, "existing.mp4");
+  await writeFile(output, "original");
+  await writeFile(
+    join(dir, "index.html"),
+    `<script>
     window.duration = 1;
     window.output = {width: 64, height: 64, fps: 10};
     window.seek = t => { if (t > 0) throw new Error('failed frame'); };
-  </script>`);
-  const result = spawnSync(process.execPath, ['src/cli.ts', 'render', dir, '-o', output], {
-    encoding: 'utf8', timeout: 15000,
-  });
+  </script>`,
+  );
+  const result = spawnSync(
+    process.execPath,
+    ["src/cli.ts", "render", dir, "-o", output],
+    {
+      encoding: "utf8",
+      timeout: 15000,
+    },
+  );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /failed frame/);
-  assert.equal(await readFile(output, 'utf8'), 'original');
-  assert.deepEqual((await readdir(dir)).sort(), ['existing.mp4', 'index.html']);
+  assert.equal(await readFile(output, "utf8"), "original");
+  assert.deepEqual((await readdir(dir)).sort(), ["existing.mp4", "index.html"]);
 });
 
-test('render streams PNG frames to FFmpeg and preserves the target if the encoder exits early', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
+test("render streams PNG frames to FFmpeg and preserves the target if the encoder exits early", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "agentframe-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await writeFile(join(dir, 'index.html'), `<script>
+  await writeFile(
+    join(dir, "index.html"),
+    `<script>
     window.duration = 0.5;
     window.output = {width:64,height:64,fps:10};
     window.seek = () => {};
-  </script>`);
-  await writeFile(join(dir, 'ffmpeg'), `#!/usr/bin/env bash
+  </script>`,
+  );
+  const bash = execFileSync("bash", ["-c", 'printf "%s" "$BASH"'], {
+    encoding: "utf8",
+  });
+  await writeFile(
+    join(dir, "ffmpeg"),
+    `#!${bash}
 for arg in "$@"; do
   case "$arg" in
     */%d.png) echo 'PNG files were used as input' >&2; exit 1 ;;
@@ -232,17 +375,29 @@ for arg in "$@"; do
 done
 export PATH="$TEST_ORIGINAL_PATH"
 exec ffmpeg "$@"
-`, { mode: 0o755 });
-  const env = { ...process.env, PATH: `${dir}:${process.env.PATH}`, TEST_ORIGINAL_PATH: process.env.PATH };
-  const output = join(dir, 'out.mp4');
-  const args = ['src/cli.ts', 'render', dir, '-o', output];
+`,
+    { mode: 0o755 },
+  );
+  const env = {
+    ...process.env,
+    PATH: `${dir}:${process.env.PATH}`,
+    TEST_ORIGINAL_PATH: process.env.PATH,
+  };
+  const output = join(dir, "out.mp4");
+  const args = ["src/cli.ts", "render", dir, "-o", output];
   execFileSync(process.execPath, args, { env, timeout: 15000 });
   const original = await readFile(output);
   const result = spawnSync(process.execPath, args, {
-    env: { ...env, TEST_ENCODER_FAIL: '1' }, encoding: 'utf8', timeout: 15000,
+    env: { ...env, TEST_ENCODER_FAIL: "1" },
+    encoding: "utf8",
+    timeout: 15000,
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /test encoder failure/);
   assert.deepEqual(await readFile(output), original);
-  assert.deepEqual((await readdir(dir)).sort(), ['ffmpeg', 'index.html', 'out.mp4']);
+  assert.deepEqual((await readdir(dir)).sort(), [
+    "ffmpeg",
+    "index.html",
+    "out.mp4",
+  ]);
 });

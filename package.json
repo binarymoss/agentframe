@@ -4,15 +4,31 @@
   "description": "The open-source video editor for coding agents: create from scratch or edit existing footage",
   "license": "GPL-3.0-only",
   "type": "module",
-  "bin": { "agentframe": "dist/cli.js" },
-  "files": ["assets/wordmark-*.svg", "dist/", "src/", "skills/agentframe/", "install.sh", "tsconfig.json"],
-  "engines": { "node": ">=26" },
+  "bin": {
+    "agentframe": "dist/cli.js"
+  },
+  "files": [
+    "assets/wordmark-*.svg",
+    "dist/",
+    "src/",
+    "skills/agentframe/",
+    "install.sh",
+    "tsconfig.json"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
   "scripts": {
     "build": "tsc --noEmit false --rewriteRelativeImportExtensions --rootDir src --outDir dist && node -e \"require('node:fs').copyFileSync('src/page.js', 'dist/page.js')\"",
     "prepack": "npm run build",
     "test": "node --test",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "playwright": "^1.59.0" },
-  "devDependencies": { "@types/node": "^26.0.0", "typescript": "^6.0.0" }
+  "dependencies": {
+    "playwright": "^1.59.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.0"
+  }
 }

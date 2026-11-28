@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import { parseArgs } from 'node:util';
-import { openStage } from './browser.ts';
-import { check } from './check.ts';
-import type { CheckReport } from './check.ts';
-import { loadProject } from './project.ts';
-import { render } from './render.ts';
-import { snapshot } from './snapshot.ts';
+import { parseArgs } from "node:util";
+import { openStage } from "./browser.ts";
+import { check } from "./check.ts";
+import type { CheckReport } from "./check.ts";
+import { loadProject } from "./project.ts";
+import { render } from "./render.ts";
+import { snapshot } from "./snapshot.ts";
 
-const helpOption = { type: 'boolean', short: 'h' } as const;
+const helpOption = { type: "boolean", short: "h" } as const;
 const help = {
   main: `Usage: agentframe <command> [options]
 
@@ -51,58 +51,84 @@ Example: agentframe render . --range 0.5,2.5 -o review.mp4`,
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
-  if (!command || command === '--help' || command === '-h') {
+  if (!command || command === "--help" || command === "-h") {
     console.log(help.main);
     return;
   }
-  if (command === 'render') {
+  if (command === "render") {
     const { positionals, values } = parseArgs({
-      args, allowPositionals: true,
-      options: { range: { type: 'string' }, output: { type: 'string', short: 'o' }, help: helpOption },
+      args,
+      allowPositionals: true,
+      options: {
+        range: { type: "string" },
+        output: { type: "string", short: "o" },
+        help: helpOption,
+      },
     });
     if (values.help) {
       console.log(help.render);
       return;
     }
-    if (positionals.length > 1 || !values.output) throw new Error('Specify an output path with -o');
-    let range;
+    if (positionals.length > 1 || !values.output)
+      throw new Error("Specify an output path with -o");
+    let range: { start: number; end: number } | undefined;
     if (values.range !== undefined) {
-      const parts = values.range.split(',');
-      if (parts.length !== 2 || parts.some((value) => !value.trim())) throw new Error('Use --range start,end');
+      const parts = values.range.split(",");
+      if (parts.length !== 2 || parts.some((value) => !value.trim()))
+        throw new Error("Use --range start,end");
       range = { start: Number(parts[0]), end: Number(parts[1]) };
     }
-    await render(await loadProject(positionals[0] ?? '.'), values.output, range);
+    await render(
+      await loadProject(positionals[0] ?? "."),
+      values.output,
+      range,
+    );
     return;
   }
-  if (command === 'check') {
+  if (command === "check") {
     const { positionals, values } = parseArgs({
-      args, allowPositionals: true, options: { json: { type: 'boolean' }, help: helpOption },
+      args,
+      allowPositionals: true,
+      options: { json: { type: "boolean" }, help: helpOption },
     });
     if (values.help) {
       console.log(help.check);
       return;
     }
-    if (positionals.length > 1) throw new Error('Expected one project directory');
-    const report = await loadProject(positionals[0] ?? '.').then(check, (error: unknown): CheckReport => ({
-      ok: false,
-      sampledTimes: [],
-      findings: [{ code: 'project', message: error instanceof Error ? error.message : String(error) }],
-    }));
-    if (values.json) console.log(JSON.stringify(report));
-    else if (report.ok) console.log('Project check passed');
-    else for (const finding of report.findings) console.error(
-      `${finding.clipId ?? finding.path ?? finding.code}: ${finding.message}${finding.time === undefined ? '' : ` at ${finding.time}s`}`,
+    if (positionals.length > 1)
+      throw new Error("Expected one project directory");
+    const report = await loadProject(positionals[0] ?? ".").then(
+      check,
+      (error: unknown): CheckReport => ({
+        ok: false,
+        sampledTimes: [],
+        findings: [
+          {
+            code: "project",
+            message: error instanceof Error ? error.message : String(error),
+          },
+        ],
+      }),
     );
+    if (values.json) console.log(JSON.stringify(report));
+    else if (report.ok) console.log("Project check passed");
+    else
+      for (const finding of report.findings)
+        console.error(
+          `${finding.clipId ?? finding.path ?? finding.code}: ${finding.message}${finding.time === undefined ? "" : ` at ${finding.time}s`}`,
+        );
     process.exitCode = report.ok ? 0 : 1;
     return;
   }
-  if (command !== 'snapshot') throw new Error(`Unknown command: ${command}`);
+  if (command !== "snapshot") throw new Error(`Unknown command: ${command}`);
   const { positionals, values } = parseArgs({
-    args, allowPositionals: true,
+    args,
+    allowPositionals: true,
     options: {
-      at: { type: 'string' }, zoom: { type: 'string' },
-      sheet: { type: 'boolean' },
-      output: { type: 'string', short: 'o', default: 'snapshots' },
+      at: { type: "string" },
+      zoom: { type: "string" },
+      sheet: { type: "boolean" },
+      output: { type: "string", short: "o", default: "snapshots" },
       help: helpOption,
     },
   });
@@ -110,14 +136,24 @@ async function main() {
     console.log(help.snapshot);
     return;
   }
-  if (positionals.length > 1 || !values.at || values.at.split(',').some((value) => !value.trim())) {
-    throw new Error('Specify snapshot timestamps with --at');
+  if (
+    positionals.length > 1 ||
+    !values.at ||
+    values.at.split(",").some((value) => !value.trim())
+  ) {
+    throw new Error("Specify snapshot timestamps with --at");
   }
-  const project = await loadProject(positionals[0] ?? '.');
+  const project = await loadProject(positionals[0] ?? ".");
   const stage = await openStage(project);
   try {
-    const paths = await snapshot(stage, values.at.split(',').map(Number), values.output, values.zoom, values.sheet);
-    console.log(paths.join('\n'));
+    const paths = await snapshot(
+      stage,
+      values.at.split(",").map(Number),
+      values.output,
+      values.zoom,
+      values.sheet,
+    );
+    console.log(paths.join("\n"));
   } finally {
     await stage.close();
   }
