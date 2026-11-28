@@ -1,0 +1,22 @@
+{
+  "formatter": {
+    "indentStyle": "space",
+    "includes": [
+      "src/**",
+      "test/**",
+      "package.json",
+      "tsconfig.json",
+      "AGENTS.md",
+      "README.md",
+      "skills/**"
+    ]
+  },
+  "linter": {
+    "includes": ["src/**", "test/**", "package.json", "tsconfig.json"]
+  },
+  "markdown": {
+    "formatter": {
+      "enabled": true
+    }
+  }
+}
