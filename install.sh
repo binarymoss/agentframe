@@ -48,7 +48,7 @@ if command -v nix >/dev/null; then
 fi
 
 node_ready() {
-  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 26 ? 0 : 1)' 2>/dev/null
+  node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 18) ? 0 : 1)' 2>/dev/null
 }
 
 ffmpeg_ready() {
@@ -81,7 +81,10 @@ install_system_dependencies() {
     fi
   elif command -v dnf >/dev/null; then
     manager=(dnf install)
-    if dnf -q list --available nodejs26-bin >/dev/null 2>&1; then
+    if dnf -q list --available nodejs24-bin >/dev/null 2>&1; then
+      node_package=nodejs24-bin
+      npm_package=nodejs24-npm
+    elif dnf -q list --available nodejs26-bin >/dev/null 2>&1; then
       node_package=nodejs26-bin
       npm_package=nodejs26-npm
     fi
@@ -126,7 +129,7 @@ if ! node_ready || ! ffmpeg_ready || ! find_browser >/dev/null || ! command -v p
   install_system_dependencies
 fi
 if ! node_ready; then
-  printf 'Node.js 26 or newer is required. If your distro does not provide it, install it separately and rerun this script.\n' >&2
+  printf 'Node.js 22.18.0 or newer is required. If your distro does not provide it, install it separately and rerun this script.\n' >&2
   exit 1
 fi
 if ! ffmpeg_ready || ! find_browser >/dev/null; then

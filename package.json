@@ -1,6 +1,6 @@
 {
   "name": "agentframe",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The open-source video editor for coding agents: create from scratch or edit existing footage",
   "license": "GPL-3.0-only",
   "type": "module",
@@ -16,7 +16,7 @@
     "tsconfig.json"
   ],
   "engines": {
-    "node": ">=26"
+    "node": ">=22.18.0"
   },
   "scripts": {
     "build": "tsc --noEmit false --rewriteRelativeImportExtensions --rootDir src --outDir dist && node -e \"require('node:fs').copyFileSync('src/page.js', 'dist/page.js')\"",
@@ -28,7 +28,7 @@
     "playwright": "^1.59.0"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
+    "@types/node": "~22.18.0",
     "typescript": "^6.0.0"
   }
 }

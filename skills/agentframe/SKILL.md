@@ -2,7 +2,7 @@
 
 name: agentframe
 description: Use when making motion graphics, animated titles, or overlays in HTML, CSS, and JavaScript with AgentFrame, or when checking, inspecting, or exporting an AgentFrame composition to MP4.
-compatibility: Requires the AgentFrame CLI, Node.js 26+, FFmpeg, FFprobe, and Chromium with H.264 decoding.
+compatibility: Requires the AgentFrame CLI, Node.js 22.18.0 or newer, FFmpeg, FFprobe, and Chromium with H.264 decoding.
 ---
 
 # AgentFrame

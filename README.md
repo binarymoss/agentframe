@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="#install"><img src="https://img.shields.io/badge/platform-Linux-85c5fa?style=for-the-badge&amp;labelColor=0D1117&amp;logo=linux&amp;logoColor=white" alt="Platform: Linux"></a>
-  <a href="#install"><img src="https://img.shields.io/badge/Node.js-26%2B-9dce8f?style=for-the-badge&amp;labelColor=0D1117&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 26 or newer"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/Node.js-22%2B-9dce8f?style=for-the-badge&amp;labelColor=0D1117&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 22 or newer"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-9cbeff?style=for-the-badge&amp;labelColor=0D1117" alt="License: GPL-3.0"></a>
 </p>
 
@@ -23,7 +23,7 @@
 curl -fsSL https://raw.githubusercontent.com/binarymoss/agentframe/main/install.sh | bash
 ```
 
-The script installs AgentFrame and any missing dependencies: Node.js 26+, FFmpeg, FFprobe, and Chromium.
+The script installs AgentFrame and any missing dependencies: Node.js 22.18.0 or newer, FFmpeg, FFprobe, and Chromium.
 
 To use a specific browser, set `AGENTFRAME_BROWSER_PATH` to its executable path.
 

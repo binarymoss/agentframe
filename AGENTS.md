@@ -2,10 +2,10 @@
 
 ## Develop and verify
 
-- On Nix, enter `nix develop` for Node.js 26, pnpm, FFmpeg/FFprobe, and Chromium. It sets `AGENTFRAME_BROWSER_PATH`. Elsewhere, use Node.js 26+, FFmpeg with `libx264`, `ffprobe`, and Chromium with H.264 decoding. Playwright uses the explicit browser path first, then a system browser on `PATH`, then its managed Chromium.
+- On Nix, enter `nix develop` for Node.js 26, pnpm, FFmpeg/FFprobe, and Chromium. It sets `AGENTFRAME_BROWSER_PATH`. `nix flake check` runs the tests on Node.js 22, 24, and 26. Elsewhere, use Node.js 22.18.0 or newer, FFmpeg with `libx264`, `ffprobe`, and Chromium with H.264 decoding. Playwright uses the explicit browser path first, then a system browser on `PATH`, then its managed Chromium.
 - Install with `pnpm install --frozen-lockfile`. Run the local CLI with `node src/cli.ts --help`. `pnpm typecheck` and `pnpm test` do not need a build; tests import or invoke the TypeScript source directly. Keep `.ts` on relative source imports and use erasable TypeScript syntax.
 - For a focused test, run `node --test test/project.test.mjs` or `node --test --test-name-pattern="decimal cut" test/project.test.mjs`. The project tests need neither a browser nor FFmpeg. The full suite launches Chromium and generates media fixtures with FFmpeg in temporary directories.
-- For packaging changes, run `pnpm build` and smoke-test `node dist/cli.js --help`. npm's `prepack` builds `dist/cli.js` and copies the injected `page.js` beside it. The Nix wrapper runs `src/cli.ts` directly; lockfile changes can also require updating the `fetchPnpmDeps` hash in `flake.nix`.
+- For packaging changes, run `pnpm build` and smoke-test `node dist/cli.js --help`. npm's `prepack` builds `dist/cli.js` and copies the injected `page.js` beside it. The Nix wrapper runs `src/cli.ts` directly; lockfile changes can also require updating the `fetchPnpmDeps` hash in `nix/package.nix`.
 
 ## Runtime boundaries
 

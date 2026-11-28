@@ -8,7 +8,10 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       browser = "${pkgs.chromium}/bin/chromium";
-      agentframe = pkgs.callPackage ./nix/package.nix { inherit browser; };
+      agentframe = pkgs.callPackage ./nix/package.nix {
+        inherit browser;
+        nodejs = pkgs.nodejs_26;
+      };
 
       lint =
         pkgs.runCommand "agentframe-lint"
@@ -34,8 +37,8 @@
             biome lint .
             touch "$out"
           '';
-      tests = agentframe.overrideAttrs (old: {
-        pname = "agentframe-tests";
+      tests = nodejs: (agentframe.override { inherit nodejs; }).overrideAttrs (old: {
+        pname = "agentframe-tests-node-${nodejs.version}";
         src = pkgs.lib.fileset.toSource {
           root = ./.;
           fileset = pkgs.lib.fileset.unions [
@@ -43,6 +46,7 @@
             ./test
             ./package.json
             ./pnpm-lock.yaml
+            ./tsconfig.json
           ];
         };
         nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.ffmpeg ];
@@ -50,7 +54,8 @@
         doCheck = true;
         checkPhase = ''
           runHook preCheck
-          pnpm test
+          ${nodejs}/bin/node node_modules/typescript/bin/tsc --noEmit
+          ${nodejs}/bin/node --test --test-concurrency=1
           runHook postCheck
         '';
         installPhase = "touch \"$out\"";
@@ -62,7 +67,12 @@
         default = agentframe;
       };
       formatter.${system} = pkgs.nixfmt-tree;
-      checks.${system} = { inherit lint tests; };
+      checks.${system} = {
+        inherit lint;
+        node22 = tests pkgs.nodejs_22;
+        node24 = tests pkgs.nodejs_24;
+        node26 = tests pkgs.nodejs_26;
+      };
       apps.${system}.agentframe = {
         type = "app";
         program = "${agentframe}/bin/agentframe";
