@@ -1,18 +1,12 @@
 ---
 name: agentframe
-description: Use when creating or editing videos with AgentFrame, including animated titles and overlays, cuts from local footage, audio mixes, and HTML/CSS/JavaScript compositions that need to render to MP4. Also use when checking an AgentFrame project or inspecting a cut frame by frame.
+description: Use when making motion graphics, animated titles, or overlays in HTML, CSS, and JavaScript with AgentFrame, or when checking, inspecting, or exporting an AgentFrame composition to MP4.
 compatibility: Requires the AgentFrame CLI, Node.js 26+, FFmpeg, FFprobe, and Chromium with H.264 decoding.
 ---
 
 # AgentFrame
 
-Keep clip timing and audio in `timeline.json`. Use HTML, CSS, and JavaScript for layout and animation. Use local assets. Compositions need no build step.
-
-| Project | Entry files |
-| --- | --- |
-| Standalone motion graphics | `index.html` |
-| Plain cut or audio edit | `timeline.json` |
-| Footage in a custom layout, or graphics over an edit | Both |
+AgentFrame is for motion design. Every composition needs `index.html`. Use HTML, CSS, and JavaScript for layout and animation. Add `timeline.json` if the scene needs timed footage or audio. Use local assets. Compositions need no build step. For cuts, trims, or concatenation without graphics, use FFmpeg directly.
 
 Keep short single-scene projects in one HTML file if that is clearer. For long videos, keep `index.html` short and split markup, styles, and animation by scene and reusable component. Load them using local files.
 
@@ -52,8 +46,9 @@ Make `window.seek(time)` set visual state directly from the requested time. Fram
 
 If the user asks you to make music and supplies neither an audio file nor another way to generate it, compose and synthesize the music in `window.buildAudio(ctx)` using Web Audio. Schedule the notes and volume envelopes on the project clock.
 
-## Edit existing media
+## Add footage and audio to a composition
 
+Place `timeline.json` next to `index.html` to time media used by the scene:
 ```json
 {
   "duration": 6,

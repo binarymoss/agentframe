@@ -11,6 +11,8 @@ const helpOption = { type: 'boolean', short: 'h' } as const;
 const help = {
   main: `Usage: agentframe <command> [options]
 
+Render HTML motion graphics. Projects require index.html.
+
 Commands:
   check     Check a project for errors
   snapshot  Capture frames as PNG images

@@ -1,17 +1,7 @@
 (() => {
   const videos = new Map();
 
-  function bind(clips, defaultStage) {
-    if (defaultStage) {
-      document.body.style.cssText = 'margin:0;background:black';
-      for (const clip of clips) {
-        if (clip.kind !== 'video') continue;
-        const video = document.createElement('video');
-        video.dataset.clip = clip.id;
-        video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain';
-        document.body.append(video);
-      }
-    }
+  function bind(clips) {
     for (const video of document.querySelectorAll('video[data-clip]')) {
       const clip = clips.find(({ id, kind }) => id === video.dataset.clip && kind === 'video');
       if (!clip || videos.has(clip.id)) throw new Error(`Invalid video binding: ${video.dataset.clip}`);

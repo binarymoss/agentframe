@@ -15,7 +15,7 @@ declare global {
     ready?: Promise<void>;
     seek?: (seconds: number, clips: Record<string, ClipState>) => void | Promise<void>;
     __agentframe: {
-      bind(clips: Clip[], defaultStage: boolean): void;
+      bind(clips: Clip[]): void;
       seek(seconds: number, clips: Record<string, ClipState>, waitForPaint: boolean): Promise<void>;
       validate(): Promise<void>;
     };
@@ -98,11 +98,6 @@ export async function openStage(project: Project, { observe, onPageError }: Stag
       if (initializing) startupErrors.push(error);
       else reportPageError(error);
     });
-    if (!project.hasHtml) {
-      await page.route(`${server.url}/`, (route) => route.fulfill({
-        contentType: 'text/html', body: '<!doctype html><body></body>',
-      }));
-    }
     const load = async (): Promise<PageMetadata> => {
       const response = await page.goto(server.url, { timeout: 10000 });
       if (!response?.ok()) throw new Error('Cannot load composition');
@@ -129,7 +124,7 @@ export async function openStage(project: Project, { observe, onPageError }: Stag
       throw new Error('index.html must define window.seek');
     }
     await timed('Font loading', page.evaluate(() => document.fonts.ready.then(() => undefined)));
-    await page.evaluate(({ clips, hasHtml }) => window.__agentframe.bind(clips, !hasHtml), project);
+    await page.evaluate((clips) => window.__agentframe.bind(clips), project.clips);
     assertHealthy();
     return {
       page, output, close, assertHealthy,

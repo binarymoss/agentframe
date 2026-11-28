@@ -139,33 +139,32 @@ test('uses timeline dimensions before loading HTML and in the exported MP4', asy
   assert.equal(size.trim(), '320,180');
 });
 
-test('a timeline-only range waits for decoding only the clips in that range', async (t) => {
+test('an HTML range captures both sides of a video cut', async (t) => {
   const dir = await mkdtemp(join(tmpdir(), 'agentframe-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  for (const [name, color, codec] of [['red.mp4', 'red', 'libx264'], ['blue.mp4', 'blue', 'libx264'], ['unsupported.avi', 'lime', 'ffv1']]) {
+  for (const [name, color] of [['red.mp4', 'red'], ['blue.mp4', 'blue']]) {
     execFileSync('ffmpeg', [
       '-v', 'error', '-f', 'lavfi', '-i', `color=${color}:s=64x64:r=10:d=1`,
-      '-c:v', codec, join(dir, name),
+      '-c:v', 'libx264', join(dir, name),
     ]);
   }
   await writeFile(join(dir, 'timeline.json'), JSON.stringify({
-    width: 64, height: 64, fps: 10, duration: 3,
-    clips: ['red.mp4', 'blue.mp4', 'unsupported.avi'].map((src, start) => ({
+    width: 64, height: 64, fps: 10, duration: 2,
+    clips: ['red.mp4', 'blue.mp4'].map((src, start) => ({
       id: src, kind: 'video', src, start, duration: 1,
     })),
   }));
+  await writeFile(join(dir, 'index.html'), `
+    <!doctype html><style>body {margin:0} video {position:absolute;inset:0}</style>
+    <video data-clip="red.mp4"></video><video data-clip="blue.mp4"></video>`);
   const output = join(dir, 'out.mp4');
-  const render = (range) => ['src/cli.ts', 'render', dir, '--range', range, '-o', output];
-  execFileSync(process.execPath, render('0.9,1.1'), { timeout: 15000 });
+  execFileSync(process.execPath, ['src/cli.ts', 'render', dir, '--range', '0.9,1.1', '-o', output], { timeout: 15000 });
   const pixels = execFileSync('ffmpeg', [
     '-v', 'error', '-i', output, '-vf', 'scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
   ]);
   assert.equal(pixels.length, 6);
   assert.ok(pixels[0] > 200 && pixels[2] < 20);
   assert.ok(pixels[3] < 20 && pixels[5] > 200);
-  const unsupported = spawnSync(process.execPath, render('2,2.1'), { encoding: 'utf8', timeout: 15000 });
-  assert.equal(unsupported.status, 1);
-  assert.match(unsupported.stderr, /Cannot decode.*unsupported\.avi/);
 });
 
 test('render reports uncaught page errors instead of replacing the target', async (t) => {

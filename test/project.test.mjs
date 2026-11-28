@@ -16,17 +16,20 @@ async function fixture(t) {
   return dir;
 }
 
-test('resolves standalone, edit-only and mixed output settings', async (t) => {
+test('requires index.html even when a timeline exists', async (t) => {
   const dir = await fixture(t);
-  await assert.rejects(loadProject(dir), /index.html or timeline.json/);
+  await writeFile(join(dir, 'timeline.json'), JSON.stringify({ duration: 8, clips: [clip] }));
+  await assert.rejects(loadProject(dir), /^Error: Project requires index\.html$/);
+});
+
+test('resolves output settings with or without a companion timeline', async (t) => {
+  const dir = await fixture(t);
   await writeFile(join(dir, 'timeline.json'), JSON.stringify({ duration: 8, width: 640, clips: [clip] }));
-  const edit = await loadProject(dir);
-  assert.equal(edit.hasHtml, false);
-  assert.deepEqual(resolveOutput(edit), { width: 640, height: 1080, fps: 30, duration: 8 });
   await writeFile(join(dir, 'index.html'), '<!doctype html>');
   const mixed = await loadProject(dir);
-  assert.equal(mixed.hasHtml, true);
-  assert.deepEqual(resolveOutput(mixed, { duration: 1, width: 320 }), resolveOutput(edit));
+  assert.deepEqual(resolveOutput(mixed, { duration: 1, width: 320 }), {
+    width: 640, height: 1080, fps: 30, duration: 8,
+  });
   await rm(join(dir, 'timeline.json'));
   const html = await loadProject(dir);
   assert.deepEqual(resolveOutput(html, { duration: 3 }), {
@@ -52,13 +55,14 @@ test('switches clips at a decimal cut without keeping the outgoing clip active',
 
 test('rejects odd output dimensions instead of silently changing them during export', () => {
   assert.throws(
-    () => resolveOutput({ hasHtml: true, clips: [] }, { width: 321, height: 180, duration: 1 }),
+    () => resolveOutput({ clips: [] }, { width: 321, height: 180, duration: 1 }),
     /width.*even/i,
   );
 });
 
 test('rejects invalid clips and sources outside the project', async (t) => {
   const dir = await fixture(t);
+  await writeFile(join(dir, 'index.html'), '<!doctype html>');
   for (const clips of [
     [clip, clip], [{ ...clip, kind: 'text' }], [{ ...clip, sourceStart: -1 }],
     [{ ...clip, sourceStart: null }], [{ ...clip, duration: 0 }],

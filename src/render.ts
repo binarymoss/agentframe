@@ -34,12 +34,7 @@ async function openCapture(stage: Stage, fps: number, waitForPaint: boolean): Pr
 export async function render(project: Project, target: string, range?: { start: number; end: number }): Promise<void> {
   const findings = await checkMedia(project);
   if (findings.length) throw new Error(findings.map((finding) => `${finding.clipId}: ${finding.message}`).join('\n'));
-  const stageProject = range && !project.hasHtml
-    ? { ...project, clips: project.clips.filter((clip) =>
-      clip.kind !== 'video' || (clip.start < range.end && clip.start + clip.duration > range.start),
-    ) }
-    : project;
-  const stage = await openStage(stageProject);
+  const stage = await openStage(project);
   let secondStage: Stage | undefined;
   let root: string | undefined;
   try {
@@ -52,8 +47,8 @@ export async function render(project: Project, target: string, range?: { start: 
     const stop = frameIndex(end, fps);
     if (first >= stop) throw new Error('Render range contains no frames');
     await validateDecode(stage);
-    const hasVideo = stageProject.clips.some((clip) => clip.kind === 'video');
-    const parallel = stop - first >= minParallelFrames && project.hasHtml && !hasVideo
+    const hasVideo = project.clips.some((clip) => clip.kind === 'video');
+    const parallel = stop - first >= minParallelFrames && !hasVideo
       && await stage.page.evaluate(() => !window.buildAudio);
     root = await mkdtemp(join(dirname(resolve(target)), '.agentframe-'));
     const mix = join(root, 'mix.wav');
@@ -61,7 +56,7 @@ export async function render(project: Project, target: string, range?: { start: 
     stage.assertHealthy();
     // A video can fire seeked before the compositor presents its frame.
     const capture = await openCapture(stage, fps, hasVideo);
-    if (parallel) secondStage = await openStage(stageProject);
+    if (parallel) secondStage = await openStage(project);
     const secondOutput = secondStage?.output;
     const captureSecond = secondStage && secondOutput?.width === width && secondOutput.height === height
       && secondOutput.fps === fps && secondOutput.duration === duration

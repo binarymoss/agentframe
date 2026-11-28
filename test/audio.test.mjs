@@ -21,6 +21,7 @@ test('mix places a sped-up tone on the project clock with pitch and fades intact
       duration: 1, speed: 2, gain: 0.5, fadeIn: 0.2, fadeOut: 0.2,
     }],
   }));
+  await writeFile(join(dir, 'index.html'), '<!doctype html>');
   const project = await loadProject(dir);
   const stage = await openStage(project);
   t.after(() => stage.close());
@@ -51,6 +52,7 @@ test('a 20ms source stays audible at double speed', async (t) => {
     duration: 0.1,
     clips: [{ id: 'blip', kind: 'audio', src: 'short.wav', start: 0, duration: 0.01, speed: 2 }],
   }));
+  await writeFile(join(dir, 'index.html'), '<!doctype html>');
   const project = await loadProject(dir);
   const stage = await openStage(project);
   t.after(() => stage.close());

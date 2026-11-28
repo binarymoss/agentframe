@@ -17,7 +17,7 @@ export type Clip = {
   fadeOut: number;
 };
 export type ClipState = { active: false } | { active: true; localTime: number; sourceTime: number };
-export type Project = { dir: string; hasHtml: boolean; output?: Output; clips: Clip[] };
+export type Project = { dir: string; output?: Output; clips: Clip[] };
 
 export const defaultViewport = { width: 1920, height: 1080 };
 
@@ -95,20 +95,18 @@ export async function loadProject(path: string): Promise<Project> {
     (file) => file.isFile(),
     (error) => { if (missing(error)) return false; throw error; },
   );
+  if (!hasHtml) throw new Error('Project requires index.html');
   const json = await readFile(resolve(dir, 'timeline.json'), 'utf8').catch((error: unknown) => {
     if (missing(error)) return undefined;
     throw error;
   });
-  if (json === undefined) {
-    if (!hasHtml) throw new Error('Project requires index.html or timeline.json');
-    return { dir, hasHtml, clips: [] };
-  }
+  if (json === undefined) return { dir, clips: [] };
   const timeline = object(JSON.parse(json), 'Timeline');
   const settings = output(timeline);
   if (!Array.isArray(timeline.clips)) throw new Error('Timeline clips must be an array');
   const clips = timeline.clips.map((value, index) => normalizeClip(value, index, dir, settings.duration));
   if (new Set(clips.map(({ id }) => id)).size !== clips.length) throw new Error('Duplicate clip ID');
-  return { dir, hasHtml, output: settings, clips };
+  return { dir, output: settings, clips };
 }
 
 export function resolveOutput(project: Project, page: PageMetadata = {}): Output {

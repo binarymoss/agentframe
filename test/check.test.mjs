@@ -42,6 +42,7 @@ test('reports an overrun of the audio stream in audible video', async (t) => {
       { ...clip, id: 'audible' }, { ...clip, id: 'muted', muted: true },
     ],
   }));
+  await writeFile(join(dir, 'index.html'), '<!doctype html><video data-clip="audible"></video>');
   const result = spawnSync(process.execPath, ['src/cli.ts', 'check', dir, '--json'], { encoding: 'utf8' });
   const report = JSON.parse(result.stdout);
   assert.ok(report.findings.some(({ clipId, message }) => clipId === 'audible' && message.includes('audio')));
@@ -76,6 +77,7 @@ test('check --json reports project load failures on stdout', async (t) => {
     assert.ok(report.findings.some(({ code, message }) => code === 'project' && message.length));
   }
   assertLoadFailure();
+  await writeFile(join(dir, 'index.html'), '<!doctype html>');
   await writeFile(join(dir, 'timeline.json'), '{');
   assertLoadFailure();
 });
